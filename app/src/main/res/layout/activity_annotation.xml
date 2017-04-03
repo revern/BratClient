@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/annotation_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    tools:context="com.flatstack.android.main_screen.AnnotationActivity"
     >
 
     <android.support.v7.widget.Toolbar
@@ -16,12 +19,26 @@
         app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         />
 
-    <Button
-        android:id="@+id/choose_text_btn"
+    <TextView
+        android:id="@+id/title"
+        android:text="@string/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/choose_text"
-        android:onClick="onChooseTextClick"
+        android:layout_below="@+id/toolbar"
+        />
+    <TextView
+        android:id="@+id/end_of"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="End of"
+        android:layout_toEndOf="@+id/title"
         />
 
-</LinearLayout>
+    <TextView
+        android:layout_below="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="below"
+        />
+
+</RelativeLayout>

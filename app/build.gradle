@@ -88,13 +88,15 @@ dependencies {
 //    compile retrofitLibs
 //    compile okHttpLibs
 
-    compile 'com.jakewharton:butterknife:7.0.0' // view injection
-    compile 'com.github.bumptech.glide:glide:3.7.0'
+    // view injection
 
     testCompile unitTestLibs
     androidTestCompile androidTestsLibs
 
+    compile 'com.jakewharton:butterknife:7.0.0'
+    compile 'com.github.bumptech.glide:glide:3.7.0'
     compile 'com.google.code.gson:gson:2.4'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
 }
 
 configurations {

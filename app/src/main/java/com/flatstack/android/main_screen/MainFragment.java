@@ -21,14 +21,6 @@ public class MainFragment extends BaseFragment {
     @Override public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        image.setOnClickListener(listener ->
-            TestDialog.show("Example Hello", "Ublyudok, mat' tvoyu, a nu idi syuda, " +
-                    "govno sobachye, reshil ko mne lezt'? Ti, zasranec vonyuchiy, mat' tvoyu, a?",
-                getFragmentManager())
-        );
 
-        Glide.with(this)
-            .load("https://pbs.twimg.com/profile_images/502109671600033792/QOAC0YGo.png")
-            .into(image);
     }
 }
