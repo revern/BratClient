@@ -20,8 +20,14 @@
         android:background="@android:color/background_dark"
         />
 
-    <TextView
-        android:id="@+id/dialog_message"
+    <EditText
+        android:id="@+id/dialog_annotation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        />
+
+    <ListView
+        android:id="@+id/dialog_annotation_list"
         android:layout_width="match_parent"
         android:layout_height="300dp"
         android:background="@android:color/white"

@@ -21,24 +21,10 @@
 
     <TextView
         android:id="@+id/title"
-        android:text="@string/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/toolbar"
-        />
-    <TextView
-        android:id="@+id/end_of"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="End of"
-        android:layout_toEndOf="@+id/title"
-        />
-
-    <TextView
-        android:layout_below="@+id/title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="below"
+        android:text="@string/title"
         />
 
 </RelativeLayout>
