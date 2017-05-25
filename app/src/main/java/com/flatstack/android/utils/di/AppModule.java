@@ -5,6 +5,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationManagerCompat;
 
+import com.facebook.stetho.okhttp3.StethoInterceptor;
 import com.flatstack.android.Api;
 import com.flatstack.android.BuildConfig;
 import com.flatstack.android.main_screen.BratInteractor;
@@ -14,7 +15,12 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Singleton;
@@ -46,12 +52,13 @@ public class AppModule {
 
     @Provides
     @Singleton
-    public OkHttpClient provideHttpClient(@NonNull File cachedDir) {
+    public OkHttpClient provideHttpClient(/*@NonNull File cachedDir*/) {
         OkHttpClient.Builder httpClientBuilder = new OkHttpClient.Builder();
-        httpClientBuilder.cache(new Cache(cachedDir, 20 * 1024 * 1024));
+//        httpClientBuilder.cache(new Cache(cachedDir, 20 * 1024 * 1024));
         httpClientBuilder.readTimeout(30, TimeUnit.SECONDS);
 
-//        httpClientBuilder.addInterceptor(chain -> {
+        httpClientBuilder.addNetworkInterceptor(new StethoInterceptor());
+        httpClientBuilder.addInterceptor(chain -> {
 //            if (userSettings.userHasToken()) {
 //                Request request = chain.request().newBuilder()
 //                        .addHeader("X-User-Token", userSettings.getToken())
@@ -59,15 +66,15 @@ public class AppModule {
 //                        .build();
 //                return chain.proceed(request);
 //            }
-//            return chain.proceed(chain.request());
-//        });
+            return chain.proceed(chain.request());
+        });
         return httpClientBuilder.build();
     }
 
-    @Provides @Singleton public File getCacheDir(@NonNull Context context) {
-        final File external = context.getExternalCacheDir();
-        return external != null ? external : context.getCacheDir();
-    }
+//    @Provides @Singleton public File getCacheDir(@NonNull Context context) {
+//        final File external = context.getExternalCacheDir();
+//        return external != null ? external : context.getCacheDir();
+//    }
 
     @Provides @Singleton
     public Api providesApi(@NonNull OkHttpClient httpClient, @NonNull Gson mapper) {
@@ -90,7 +97,5 @@ public class AppModule {
     @Provides @Singleton public BratInteractor providesBratInteractor(@NonNull Api api) {
         return new BratInteractor(api);
     }
-
-
 
 }

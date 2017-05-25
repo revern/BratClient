@@ -1,14 +1,19 @@
 package com.flatstack.android.main_screen;
 
+import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.support.annotation.NonNull;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import com.flatstack.android.Annotation;
 import com.flatstack.android.R;
 import com.flatstack.android.utils.Bus;
 import com.flatstack.android.utils.di.Injector;
@@ -19,9 +24,17 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+
+import butterknife.OnClick;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
+
 
 public class AnnotationActivity extends BaseActivity implements View.OnClickListener {
 
@@ -31,10 +44,13 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
 
     RelativeLayout uiMainContainer;
     TextView uiFocusedTextView;
+    WebView uiWebView;
+    TextView uiOk;
 
     private List<TextView> uiTextList = new ArrayList<>();
-    private ArrayList<String> annotationList;
+    private ArrayList<String> annotationList = new ArrayList<>();
     private String text;
+    private boolean multySelectingState;
 
     @NonNull @Override public UiInfo getUiInfo() {
         return new UiInfo(R.layout.activity_main)
@@ -47,18 +63,47 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_annotation);
         uiMainContainer = (RelativeLayout) findViewById(R.id.annotation_container);
+        uiWebView = (WebView) findViewById(R.id.webView);
+        uiOk = (TextView) findViewById(R.id.ok_btn);
         Bus.subscribe(this);
         Injector.inject(this);
 
         loadSettings();
 
-        showText();
+//        showText();
     }
 
-    private void loadSettings() {
-        //on main thread
-        text = bratInteractor.loadText();
-        annotationList = bratInteractor.loadAnnotations();
+    @SuppressLint("SetJavaScriptEnabled") private void loadSettings() {
+        uiWebView.getSettings().setJavaScriptEnabled(true);
+        uiWebView.addJavascriptInterface(new MyJavaScriptInterface(), "INTERFACE");
+        uiWebView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                view.loadUrl("javascript:window.INTERFACE.processContent(document.getElementsByTagName('body')[0].innerText);");
+            }
+        });
+        uiWebView.loadUrl("http://weaver.nlplab.org/api/documents/esp.train-doc-27.txt");
+
+        bratInteractor.loadAllAnnotations()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(result -> {
+                    for (Annotation annotation : result.getAnnotations()) {
+                        annotationList.add(annotation.getBody());
+                    }
+                    Set<String> uniqueValues = new HashSet<>();
+                    uniqueValues.addAll(annotationList);
+                    annotationList.clear();
+                    annotationList.addAll(uniqueValues);
+                    annotationList.remove(null);
+                    for (int i = annotationList.size() - 1; i >= 0; i--) {
+                        Log.d("ARRAY!!!", annotationList.toString());
+                        if (annotationList.get(i).matches("^http.*") || annotationList.get(i).matches("^Some.*")) {
+                            annotationList.remove(i);
+                        }
+                    }
+                    Log.d("ANNOTATIONS", annotationList.toString());
+                }, error -> Log.i("ERROR", error.getMessage()));
     }
 
     private void showText() {
@@ -99,13 +144,19 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         textView.setTypeface(Typeface.MONOSPACE);
         RelativeLayout.LayoutParams params;
 
-        if (text.length() == 1 && text.matches(".*[^A-Za-z].*")){
+        if (text.length() == 1 && text.matches(".*[^A-Za-z].*")) {
             textView.setPadding(0, 0, 0, 0);
             params = new RelativeLayout.LayoutParams(19, VIEW_HEIGHT);
         } else {
             textView.setPadding(16, 0, 0, 0);
             params = new RelativeLayout.LayoutParams(text.length() * 19 + 16, VIEW_HEIGHT);
             textView.setOnClickListener(this);
+            textView.setOnLongClickListener(view -> {
+                textView.setBackgroundColor(Color.LTGRAY);
+                multySelectingState = true;
+                uiOk.setVisibility(View.VISIBLE);
+                return false;
+            });
         }
         params.addRule(RelativeLayout.BELOW, R.id.title);
         setMargin(params, text);
@@ -135,7 +186,11 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
     @Override public void onClick(View view) {
         TextView tv = (TextView) view;
         uiFocusedTextView = tv;
-        TestDialog.show(tv.getText().toString(), annotationList, getSupportFragmentManager());
+        if (multySelectingState) {
+            tv.setBackgroundColor(Color.LTGRAY);
+        } else {
+            TestDialog.show(tv.getText().toString(), annotationList, getSupportFragmentManager());
+        }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -152,6 +207,25 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
                 break;
             default:
                 break;
+        }
+    }
+
+    public void onOkClick(View view) {
+        //TODO REMASTER IT
+        multySelectingState = false;
+        TestDialog.show("", annotationList, getSupportFragmentManager());
+        uiOk.setVisibility(View.GONE);
+    }
+
+
+    class MyJavaScriptInterface {
+        @SuppressWarnings("unused")
+
+        @JavascriptInterface
+        public void processContent(String aContent) {
+            text = aContent;
+            Log.d("contentNET", aContent);
+            runOnUiThread(AnnotationActivity.this::showText);
         }
     }
 
