@@ -1,10 +1,12 @@
 package com.flatstack.android;
 
+import java.io.Serializable;
+
 /**
  * Created by Revern on 10.04.2017.
  */
 
-public class Document {
+public class Document implements Serializable{
     private String id;
     private String name;
     private String text;

@@ -42,7 +42,7 @@ public class BratInteractor {
         return api.getDocument(id);
     }
 
-    public Observable<List<Document>> loadDocuments() {
+    public Observable<Graph> loadDocuments() {
         return api.getAllDocuments();
     }
 

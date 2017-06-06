@@ -14,6 +14,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.flatstack.android.Annotation;
+import com.flatstack.android.Document;
 import com.flatstack.android.R;
 import com.flatstack.android.utils.Bus;
 import com.flatstack.android.utils.di.Injector;
@@ -27,10 +28,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
 import butterknife.OnClick;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -38,17 +40,19 @@ import rx.schedulers.Schedulers;
 
 public class AnnotationActivity extends BaseActivity implements View.OnClickListener {
 
+    public static final String ARG_DOCUMENT = "document";
     private static final int VIEW_HEIGHT = 60;
 
     @Inject BratInteractor bratInteractor;
 
-    RelativeLayout uiMainContainer;
+    @Bind(R.id.annotation_container) RelativeLayout uiMainContainer;
+    @Bind(R.id.webView) WebView uiWebView;
+    @Bind(R.id.ok_btn) TextView uiOk;
     TextView uiFocusedTextView;
-    WebView uiWebView;
-    TextView uiOk;
 
     private List<TextView> uiTextList = new ArrayList<>();
     private ArrayList<String> annotationList = new ArrayList<>();
+    private Document doc;
     private String text;
     private boolean multySelectingState;
 
@@ -62,15 +66,17 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_annotation);
-        uiMainContainer = (RelativeLayout) findViewById(R.id.annotation_container);
-        uiWebView = (WebView) findViewById(R.id.webView);
-        uiOk = (TextView) findViewById(R.id.ok_btn);
         Bus.subscribe(this);
         Injector.inject(this);
+        ButterKnife.bind(this);
 
         loadSettings();
 
-//        showText();
+        showText();
+    }
+
+    @Override protected void parseArguments(@NonNull Bundle extras) {
+        doc = (Document) extras.getSerializable(ARG_DOCUMENT);
     }
 
     @SuppressLint("SetJavaScriptEnabled") private void loadSettings() {
@@ -82,7 +88,7 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
                 view.loadUrl("javascript:window.INTERFACE.processContent(document.getElementsByTagName('body')[0].innerText);");
             }
         });
-        uiWebView.loadUrl("http://weaver.nlplab.org/api/documents/esp.train-doc-27.txt");
+        uiWebView.loadUrl("http://weaver.nlplab.org/api/documents/" + doc.getName());
 
         bratInteractor.loadAllAnnotations()
                 .subscribeOn(Schedulers.io())
@@ -210,15 +216,14 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         }
     }
 
-    public void onOkClick(View view) {
-        //TODO REMASTER IT
+    @OnClick(R.id.ok_btn) public void onOkClick(View view) {
         multySelectingState = false;
         TestDialog.show("", annotationList, getSupportFragmentManager());
         uiOk.setVisibility(View.GONE);
     }
 
 
-    class MyJavaScriptInterface {
+    private class MyJavaScriptInterface {
         @SuppressWarnings("unused")
 
         @JavascriptInterface

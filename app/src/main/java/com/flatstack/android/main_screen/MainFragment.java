@@ -9,6 +9,7 @@ import com.flatstack.android.R;
 import com.flatstack.android.utils.ui.BaseFragment;
 
 import butterknife.Bind;
+import rx.Observable;
 
 public class MainFragment extends BaseFragment {
 
@@ -20,7 +21,5 @@ public class MainFragment extends BaseFragment {
 
     @Override public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-
     }
 }
