@@ -43,8 +43,8 @@ public class BratInteractor {
         return api.getAllDocuments();
     }
 
-    public Observable<Annotation> addAnnotation(@NonNull String body, @NonNull String target) {
-        return api.addAnnnotation(body, target);
+    public Observable<Annotation> addAnnotation(@NonNull Annotation annotation) {
+        return api.addAnnnotation(annotation.getBody(), annotation.getTarget());
     }
 
 }

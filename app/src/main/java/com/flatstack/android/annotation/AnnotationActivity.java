@@ -13,6 +13,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.flatstack.android.Api;
 import com.flatstack.android.BratInteractor;
@@ -21,18 +22,24 @@ import com.flatstack.android.R;
 import com.flatstack.android.model.Document;
 import com.flatstack.android.settings.SettingsActivity;
 import com.flatstack.android.utils.Bus;
+import com.flatstack.android.utils.CacheUtils;
 import com.flatstack.android.utils.ColorUtils;
+import com.flatstack.android.utils.NetworkCheckingTimer;
 import com.flatstack.android.utils.di.Injector;
+import com.flatstack.android.utils.network.NetworkUtils;
 import com.flatstack.android.utils.ui.BaseActivity;
 import com.flatstack.android.utils.ui.UiInfo;
+import com.google.gson.Gson;
 
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
 
 import javax.inject.Inject;
 
@@ -62,6 +69,7 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
     private Document doc;
     private String text;
     private boolean multySelectingState;
+    private Gson gson = new Gson();
 
     @NonNull @Override public UiInfo getUiInfo() {
         return new UiInfo(R.layout.activity_documents_list)
@@ -77,6 +85,33 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         Injector.inject(this);
         annotationsColorList = ColorUtils.getAnntationColors(this);
         loadSettings();
+        startNetworkChecking();
+    }
+
+    private void startNetworkChecking() {
+        Timer timer = new Timer();
+        NetworkCheckingTimer networkCheckingTimer = new NetworkCheckingTimer(() -> {
+            if (bratInteractor != null && NetworkUtils.checkNetworkConnection(this)) {
+                Set<String> cachedAnnotationsSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
+                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
+                for (Iterator<String> i = cachedAnnotationsSet.iterator(); i.hasNext(); ) {
+                    String jsonAnnotation = i.next();
+                    Annotation annotation = gson.fromJson(jsonAnnotation, Annotation.class);
+                    bratInteractor.addAnnotation(annotation)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(result -> {
+                                    }
+                                    , error -> {
+                                        String json = gson.toJson(annotation);
+                                        Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
+                                        annotationSet.add(json);
+                                        prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
+                                    });
+                }
+            }
+        });
+        timer.scheduleAtFixedRate(networkCheckingTimer, 0, 60 * 1000);
     }
 
     @Override protected void parseArguments(@NonNull Bundle extras) {
@@ -216,12 +251,18 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
             uiSelectedVews.add(uiFocusedTextView);
         }
         for (TextView tv : uiSelectedVews) {
-            bratInteractor.addAnnotation(annotationList.get(event.getI()), getAnnotationTarget(tv))
+            Annotation annotation = new Annotation(annotationList.get(event.getI()), getAnnotationTarget(tv));
+            bratInteractor.addAnnotation(annotation)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(result ->
                                     tv.setBackgroundColor(annotationsColorList.get(event.getI()))
-                            , ignoreError -> {
+                            , error -> {
+                                Toast.makeText(this, "Connection faied, sending to server when connection access", Toast.LENGTH_SHORT).show();
+                                String json = gson.toJson(annotation);
+                                Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
+                                annotationSet.add(json);
+                                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
                             });
         }
     }
@@ -232,14 +273,20 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
             uiSelectedVews.add(uiFocusedTextView);
         }
         for (TextView tv : uiSelectedVews) {
-            bratInteractor.addAnnotation(event.getAnnotation(), getAnnotationTarget(tv))
+            Annotation annotation = new Annotation(event.getAnnotation(), getAnnotationTarget(tv));
+            bratInteractor.addAnnotation(annotation)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(result -> {
                                 tv.setBackgroundColor(annotationList.size());
                                 annotationList.add(event.getAnnotation());
                             }
-                            , ignoreError -> {
+                            , error -> {
+                                Toast.makeText(this, "Connection faied, sending to server when connection access", Toast.LENGTH_SHORT).show();
+                                String json = gson.toJson(annotation);
+                                Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
+                                annotationSet.add(json);
+                                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
                             });
         }
     }
