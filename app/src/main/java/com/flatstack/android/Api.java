@@ -2,11 +2,14 @@ package com.flatstack.android;
 
 import android.support.annotation.NonNull;
 
+import com.flatstack.android.model.Annotation;
+import com.flatstack.android.model.Annotations;
+import com.flatstack.android.model.Document;
+
 import java.util.List;
 
 import okhttp3.ResponseBody;
 import retrofit2.http.GET;
-import retrofit2.http.PATCH;
 import retrofit2.http.Path;
 import rx.Observable;
 

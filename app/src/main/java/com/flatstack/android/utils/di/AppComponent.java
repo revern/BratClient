@@ -1,6 +1,6 @@
 package com.flatstack.android.utils.di;
 
-import com.flatstack.android.main_screen.AnnotationActivity;
+import com.flatstack.android.annotation.AnnotationActivity;
 
 import javax.inject.Singleton;
 

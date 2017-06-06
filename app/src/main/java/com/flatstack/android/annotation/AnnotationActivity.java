@@ -1,4 +1,4 @@
-package com.flatstack.android.main_screen;
+package com.flatstack.android.annotation;
 
 import android.annotation.SuppressLint;
 import android.graphics.Color;
@@ -13,7 +13,8 @@ import android.webkit.WebViewClient;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.flatstack.android.Annotation;
+import com.flatstack.android.BratInteractor;
+import com.flatstack.android.model.Annotation;
 import com.flatstack.android.R;
 import com.flatstack.android.utils.Bus;
 import com.flatstack.android.utils.di.Injector;
@@ -27,11 +28,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import butterknife.OnClick;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
@@ -189,7 +188,7 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         if (multySelectingState) {
             tv.setBackgroundColor(Color.LTGRAY);
         } else {
-            TestDialog.show(tv.getText().toString(), annotationList, getSupportFragmentManager());
+            AnnotationDialog.show(tv.getText().toString(), annotationList, getSupportFragmentManager());
         }
     }
 
@@ -213,7 +212,7 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
     public void onOkClick(View view) {
         //TODO REMASTER IT
         multySelectingState = false;
-        TestDialog.show("", annotationList, getSupportFragmentManager());
+        AnnotationDialog.show("", annotationList, getSupportFragmentManager());
         uiOk.setVisibility(View.GONE);
     }
 

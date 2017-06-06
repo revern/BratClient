@@ -4,7 +4,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentActivity;
 
 import com.flatstack.android.App;
-import com.flatstack.android.main_screen.AnnotationActivity;
+import com.flatstack.android.annotation.AnnotationActivity;
 
 /**
  * Created by Revern on 04.04.2017.

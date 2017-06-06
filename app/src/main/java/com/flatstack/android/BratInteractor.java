@@ -1,12 +1,10 @@
-package com.flatstack.android.main_screen;
+package com.flatstack.android;
 
 import android.support.annotation.NonNull;
 
-import com.flatstack.android.Annotation;
-import com.flatstack.android.Annotations;
+import com.flatstack.android.model.Annotations;
 import com.flatstack.android.Api;
-import com.flatstack.android.Document;
-import com.flatstack.android.Graph;
+import com.flatstack.android.model.Document;
 
 import java.util.ArrayList;
 import java.util.List;

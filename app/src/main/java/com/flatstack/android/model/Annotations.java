@@ -1,4 +1,4 @@
-package com.flatstack.android;
+package com.flatstack.android.model;
 
 import com.google.gson.annotations.SerializedName;
 
