@@ -1,6 +1,7 @@
-package com.flatstack.android.main_screen;
+package com.flatstack.android.annotation;
 
 import android.annotation.SuppressLint;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.support.annotation.NonNull;
@@ -13,10 +14,14 @@ import android.webkit.WebViewClient;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.flatstack.android.Annotation;
-import com.flatstack.android.Document;
+import com.flatstack.android.Api;
+import com.flatstack.android.BratInteractor;
+import com.flatstack.android.model.Annotation;
 import com.flatstack.android.R;
+import com.flatstack.android.model.Document;
+import com.flatstack.android.settings.SettingsActivity;
 import com.flatstack.android.utils.Bus;
+import com.flatstack.android.utils.ColorUtils;
 import com.flatstack.android.utils.di.Injector;
 import com.flatstack.android.utils.ui.BaseActivity;
 import com.flatstack.android.utils.ui.UiInfo;
@@ -32,7 +37,6 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import butterknife.Bind;
-import butterknife.ButterKnife;
 import butterknife.OnClick;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
@@ -43,6 +47,7 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
     public static final String ARG_DOCUMENT = "document";
     private static final int VIEW_HEIGHT = 60;
 
+    @Inject SharedPreferences prefs;
     @Inject BratInteractor bratInteractor;
 
     @Bind(R.id.annotation_container) RelativeLayout uiMainContainer;
@@ -51,13 +56,15 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
     TextView uiFocusedTextView;
 
     private List<TextView> uiTextList = new ArrayList<>();
+    private List<TextView> uiSelectedVews = new ArrayList<>();
     private ArrayList<String> annotationList = new ArrayList<>();
+    private List<Integer> annotationsColorList = new ArrayList<>();
     private Document doc;
     private String text;
     private boolean multySelectingState;
 
     @NonNull @Override public UiInfo getUiInfo() {
-        return new UiInfo(R.layout.activity_main)
+        return new UiInfo(R.layout.activity_documents_list)
                 .setTitleRes(R.string.app_name)
                 .enableBackButton();
     }
@@ -68,11 +75,8 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         setContentView(R.layout.activity_annotation);
         Bus.subscribe(this);
         Injector.inject(this);
-        ButterKnife.bind(this);
-
+        annotationsColorList = ColorUtils.getAnntationColors(this);
         loadSettings();
-
-        showText();
     }
 
     @Override protected void parseArguments(@NonNull Bundle extras) {
@@ -88,7 +92,7 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
                 view.loadUrl("javascript:window.INTERFACE.processContent(document.getElementsByTagName('body')[0].innerText);");
             }
         });
-        uiWebView.loadUrl("http://weaver.nlplab.org/api/documents/" + doc.getName());
+        uiWebView.loadUrl(prefs.getString(SettingsActivity.KEY_BASE_URL, Api.BASE_URL) + doc.getName());
 
         bratInteractor.loadAllAnnotations()
                 .subscribeOn(Schedulers.io())
@@ -103,12 +107,10 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
                     annotationList.addAll(uniqueValues);
                     annotationList.remove(null);
                     for (int i = annotationList.size() - 1; i >= 0; i--) {
-                        Log.d("ARRAY!!!", annotationList.toString());
                         if (annotationList.get(i).matches("^http.*") || annotationList.get(i).matches("^Some.*")) {
                             annotationList.remove(i);
                         }
                     }
-                    Log.d("ANNOTATIONS", annotationList.toString());
                 }, error -> Log.i("ERROR", error.getMessage()));
     }
 
@@ -159,6 +161,8 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
             textView.setOnClickListener(this);
             textView.setOnLongClickListener(view -> {
                 textView.setBackgroundColor(Color.LTGRAY);
+                uiSelectedVews.clear();
+                uiSelectedVews.add((TextView) view);
                 multySelectingState = true;
                 uiOk.setVisibility(View.VISIBLE);
                 return false;
@@ -193,35 +197,76 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         TextView tv = (TextView) view;
         uiFocusedTextView = tv;
         if (multySelectingState) {
+            uiSelectedVews.add(tv);
             tv.setBackgroundColor(Color.LTGRAY);
         } else {
-            TestDialog.show(tv.getText().toString(), annotationList, getSupportFragmentManager());
-        }
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onEvent(AnnotatedEvent event) {
-        switch (event.getI()) {
-            case 0:
-                uiFocusedTextView.setBackgroundColor(Color.RED);
-                break;
-            case 1:
-                uiFocusedTextView.setBackgroundColor(Color.BLUE);
-                break;
-            case 2:
-                uiFocusedTextView.setBackgroundColor(Color.GREEN);
-                break;
-            default:
-                break;
+            AnnotationDialog.show(tv.getText().toString(), annotationList, getSupportFragmentManager());
         }
     }
 
     @OnClick(R.id.ok_btn) public void onOkClick(View view) {
         multySelectingState = false;
-        TestDialog.show("", annotationList, getSupportFragmentManager());
+        AnnotationDialog.show("", annotationList, getSupportFragmentManager());
         uiOk.setVisibility(View.GONE);
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(AnnotatedEvent event) {
+        if (uiSelectedVews.isEmpty()) {
+            uiSelectedVews.add(uiFocusedTextView);
+        }
+        for (TextView tv : uiSelectedVews) {
+            bratInteractor.addAnnotation(annotationList.get(event.getI()), getAnnotationTarget(tv))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(result ->
+                                    tv.setBackgroundColor(annotationsColorList.get(event.getI()))
+                            , ignoreError -> {
+                            });
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(NewAnnotationEvent event) {
+        if (uiSelectedVews.isEmpty()) {
+            uiSelectedVews.add(uiFocusedTextView);
+        }
+        for (TextView tv : uiSelectedVews) {
+            bratInteractor.addAnnotation(event.getAnnotation(), getAnnotationTarget(tv))
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(result -> {
+                                tv.setBackgroundColor(annotationList.size());
+                                annotationList.add(event.getAnnotation());
+                            }
+                            , ignoreError -> {
+                            });
+        }
+    }
+
+    private String getAnnotationTarget(TextView view) {
+        int number = 0;
+        for (TextView tv : uiTextList) {
+            if (tv.getText().toString().equals(view.getText().toString())) {
+                number++;
+                if (tv == view) {
+                    break;
+                }
+            }
+        }
+        String clonedText = "";
+        String replaceSympols = "";
+        for (int i = 0; i < view.getText().toString().length(); i++) {
+            replaceSympols += "?";
+        }
+        clonedText += text;
+        for (int i = 1; i < number; i++) {
+            clonedText.replaceFirst(".*" + view.getText().toString() + ".*", replaceSympols);
+        }
+        int start = text.indexOf(view.getText().toString());
+        int end = start + view.getText().toString().length();
+        return prefs.getString(SettingsActivity.KEY_BASE_URL, Api.BASE_URL) + "#char=" + start + "," + end;
+    }
 
     private class MyJavaScriptInterface {
         @SuppressWarnings("unused")

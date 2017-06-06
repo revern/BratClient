@@ -1,4 +1,4 @@
-package com.flatstack.android.main_screen;
+package com.flatstack.android.documents;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
@@ -10,7 +10,9 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import com.flatstack.android.Document;
+import com.flatstack.android.BratInteractor;
+import com.flatstack.android.annotation.AnnotationActivity;
+import com.flatstack.android.model.Document;
 import com.flatstack.android.utils.ui.BaseActivity;
 import com.flatstack.android.R;
 import com.flatstack.android.utils.ui.UiInfo;
@@ -21,12 +23,11 @@ import java.util.List;
 import javax.inject.Inject;
 
 import butterknife.Bind;
-import butterknife.ButterKnife;
 import butterknife.OnItemClick;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
-public class MainActivity extends BaseActivity {
+public class DocumentsListActivity extends BaseActivity {
 
     @Inject BratInteractor bratInteractor;
 
@@ -36,14 +37,13 @@ public class MainActivity extends BaseActivity {
     private List<Document> docs = new ArrayList<>();
 
     @NonNull @Override public UiInfo getUiInfo() {
-        return new UiInfo(R.layout.activity_main)
+        return new UiInfo(R.layout.activity_documents_list)
                 .setTitleRes(R.string.app_name)
                 .enableBackButton();
     }
 
     @Override protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ButterKnife.bind(this);
         loadDocumentsList();
     }
 

@@ -2,12 +2,13 @@ package com.flatstack.android;
 
 import android.support.annotation.NonNull;
 
-import java.util.List;
+import com.flatstack.android.model.Annotation;
+import com.flatstack.android.model.Annotations;
+import com.flatstack.android.model.Graph;
 
 import okhttp3.ResponseBody;
 import retrofit2.http.Field;
 import retrofit2.http.GET;
-import retrofit2.http.PATCH;
 import retrofit2.http.POST;
 import retrofit2.http.Path;
 import rx.Observable;
@@ -27,7 +28,6 @@ public interface Api {
     );
 
     @POST(BASE_URL + "annotations") Observable<Annotation> addAnnnotation(
-            @NonNull @Field("id") String id,
             @NonNull @Field("id") String body,
             @NonNull @Field("id") String target
     );
