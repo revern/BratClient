@@ -52,7 +52,7 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
     private boolean multySelectingState;
 
     @NonNull @Override public UiInfo getUiInfo() {
-        return new UiInfo(R.layout.activity_main)
+        return new UiInfo(R.layout.activity_documents_list)
                 .setTitleRes(R.string.app_name)
                 .enableBackButton();
     }

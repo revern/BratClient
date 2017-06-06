@@ -15,14 +15,14 @@ import com.flatstack.android.utils.ui.UiInfo;
 
 import java.util.ArrayList;
 
-public class MainActivity extends BaseActivity {
+public class DocumentsListActivity extends BaseActivity {
 
     ListView uiDocs;
 
     ArrayList<String> docs = new ArrayList<>();
 
     @NonNull @Override public UiInfo getUiInfo() {
-        return new UiInfo(R.layout.activity_main)
+        return new UiInfo(R.layout.activity_documents_list)
                 .setTitleRes(R.string.app_name)
                 .enableBackButton();
     }
