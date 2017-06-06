@@ -1,15 +1,12 @@
-package com.flatstack.android.main_screen;
+package com.flatstack.android;
 
 import android.support.annotation.NonNull;
 
-import com.flatstack.android.Annotation;
-import com.flatstack.android.Annotations;
-import com.flatstack.android.Api;
-import com.flatstack.android.Document;
-import com.flatstack.android.Graph;
+import com.flatstack.android.model.Annotation;
+import com.flatstack.android.model.Annotations;
+import com.flatstack.android.model.Graph;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import okhttp3.ResponseBody;
 import rx.Observable;
@@ -44,6 +41,10 @@ public class BratInteractor {
 
     public Observable<Graph> loadDocuments() {
         return api.getAllDocuments();
+    }
+
+    public Observable<Annotation> addAnnotation(@NonNull String body, @NonNull String target) {
+        return api.addAnnnotation(body, target);
     }
 
 }

@@ -2,34 +2,26 @@ package com.flatstack.android.utils.di;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
-import android.support.v4.app.NotificationManagerCompat;
 
 import com.facebook.stetho.okhttp3.StethoInterceptor;
 import com.flatstack.android.Api;
-import com.flatstack.android.BuildConfig;
-import com.flatstack.android.main_screen.BratInteractor;
+import com.flatstack.android.BratInteractor;
+import com.flatstack.android.settings.SettingsActivity;
 import com.flatstack.android.utils.network.RxErrorHandlingCallAdapterFactory;
 import com.flatstack.android.utils.network.StringConverterFactory;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Singleton;
 
 import dagger.Module;
 import dagger.Provides;
-import okhttp3.Cache;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -39,6 +31,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 @Module
 public class AppModule {
+
+    public static final String KEY_PREFS = "prefs";
 
     private Application mApplication;
 
@@ -50,6 +44,11 @@ public class AppModule {
         return mApplication;
     }
 
+    @Provides
+    @Singleton
+    public SharedPreferences provideSharedPreferences(){
+        return mApplication.getSharedPreferences(KEY_PREFS, Context.MODE_PRIVATE);
+    }
     @Provides
     @Singleton
     public OkHttpClient provideHttpClient(/*@NonNull File cachedDir*/) {
@@ -77,10 +76,10 @@ public class AppModule {
 //    }
 
     @Provides @Singleton
-    public Api providesApi(@NonNull OkHttpClient httpClient, @NonNull Gson mapper) {
+    public Api providesApi(@NonNull OkHttpClient httpClient, @NonNull Gson mapper, SharedPreferences prefs) {
         return new Retrofit.Builder()
                 .client(httpClient)
-                .baseUrl(Api.BASE_URL)
+                .baseUrl(prefs.getString(SettingsActivity.KEY_BASE_URL, Api.BASE_URL))
                 .addCallAdapterFactory(RxErrorHandlingCallAdapterFactory.create())
                 .addConverterFactory(StringConverterFactory.create())
                 .addConverterFactory(GsonConverterFactory.create(mapper))

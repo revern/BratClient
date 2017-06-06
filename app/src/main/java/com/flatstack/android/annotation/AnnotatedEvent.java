@@ -1,4 +1,4 @@
-package com.flatstack.android.main_screen;
+package com.flatstack.android.annotation;
 
 /**
  * Created by Revern on 04.04.2017.

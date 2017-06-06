@@ -1,4 +1,4 @@
-package com.flatstack.android;
+package com.flatstack.android.model;
 
 /**
  * Created by Revern on 10.04.2017.

@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context="com.flatstack.android.main_screen.AnnotationActivity"
+    tools:context="com.flatstack.android.annotation.AnnotationActivity"
     >
 
 
