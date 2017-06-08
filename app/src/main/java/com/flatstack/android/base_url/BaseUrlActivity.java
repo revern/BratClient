@@ -1,11 +1,9 @@
-package com.flatstack.android.settings;
+package com.flatstack.android.base_url;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.annotation.NonNull;
 import android.os.Bundle;
-import android.view.KeyEvent;
-import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 
@@ -22,13 +20,14 @@ import butterknife.Bind;
 import butterknife.OnClick;
 import butterknife.OnEditorAction;
 
-public class SettingsActivity extends BaseActivity {
+public class BaseUrlActivity extends BaseActivity {
 
     public static final String KEY_BASE_URL = "baseUrl";
 
     @Bind(R.id.base_url) EditText uiBaseUrl;
 
     @Inject SharedPreferences prefs;
+
     @NonNull @Override public UiInfo getUiInfo() {
         return new UiInfo(R.layout.activity_settings)
                 .setTitleRes(R.string.settings);

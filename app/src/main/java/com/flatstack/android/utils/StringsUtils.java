@@ -9,7 +9,7 @@ import java.util.Collection;
  * Created by Revern on 04.04.2017.
  */
 
-public class Strings {
+public class StringsUtils {
     @NonNull public static String listToString(@NonNull Collection<String> strings) {
         String result = "";
         for (String string : strings) {
@@ -24,18 +24,5 @@ public class Strings {
 
     public static boolean isEmpty(@Nullable String str) {
         return str == null || str.isEmpty();
-    }
-
-    public static int getPixels(String text){
-        int pixels = 0;
-
-        for(char c : text.toCharArray()){
-            pixels+=getCharPixel(c);
-        }
-        return pixels;
-    }
-
-    public static int getCharPixel(char c){
-        return c;
     }
 }

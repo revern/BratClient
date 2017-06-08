@@ -1,6 +1,5 @@
 package com.flatstack.android.annotation;
 
-import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -10,7 +9,6 @@ import android.util.Log;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,7 +18,7 @@ import com.flatstack.android.BratInteractor;
 import com.flatstack.android.model.Annotation;
 import com.flatstack.android.R;
 import com.flatstack.android.model.Document;
-import com.flatstack.android.settings.SettingsActivity;
+import com.flatstack.android.base_url.BaseUrlActivity;
 import com.flatstack.android.utils.Bus;
 import com.flatstack.android.utils.CacheUtils;
 import com.flatstack.android.utils.ColorUtils;
@@ -49,7 +47,7 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
 
-public class AnnotationActivity extends BaseActivity implements View.OnClickListener {
+public class AnnotationActivity extends BaseActivity {
 
     public static final String ARG_DOCUMENT = "document";
     private static final int VIEW_HEIGHT = 60;
@@ -57,9 +55,10 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
     @Inject SharedPreferences prefs;
     @Inject BratInteractor bratInteractor;
 
-    @Bind(R.id.annotation_container) RelativeLayout uiMainContainer;
     @Bind(R.id.webView) WebView uiWebView;
+    @Bind(R.id.annotation_container) RelativeLayout uiMainContainer;
     @Bind(R.id.ok_btn) TextView uiOk;
+
     TextView uiFocusedTextView;
 
     private List<TextView> uiTextList = new ArrayList<>();
@@ -84,7 +83,8 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         Bus.subscribe(this);
         Injector.inject(this);
         annotationsColorList = ColorUtils.getAnntationColors(this);
-        loadSettings();
+        loadAnnotations();
+        showText();
         startNetworkChecking();
     }
 
@@ -92,22 +92,24 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         Timer timer = new Timer();
         NetworkCheckingTimer networkCheckingTimer = new NetworkCheckingTimer(() -> {
             if (bratInteractor != null && NetworkUtils.checkNetworkConnection(this)) {
-                Set<String> cachedAnnotationsSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
+                Set<String> cachedAnnotationsSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION,
+                        new HashSet<>());
                 prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
                 for (Iterator<String> i = cachedAnnotationsSet.iterator(); i.hasNext(); ) {
                     String jsonAnnotation = i.next();
                     Annotation annotation = gson.fromJson(jsonAnnotation, Annotation.class);
                     bratInteractor.addAnnotation(annotation)
-                            .subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .subscribe(result -> {
-                                    }
-                                    , error -> {
-                                        String json = gson.toJson(annotation);
-                                        Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
-                                        annotationSet.add(json);
-                                        prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
-                                    });
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(result -> {
+                            }
+                            , error -> {
+                                String json = gson.toJson(annotation);
+                                Set<String> annotationSet = prefs.getStringSet(
+                                        CacheUtils.KEY_ANNOTATION, new HashSet<>());
+                                annotationSet.add(json);
+                                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
+                            });
                 }
             }
         });
@@ -118,17 +120,7 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         doc = (Document) extras.getSerializable(ARG_DOCUMENT);
     }
 
-    @SuppressLint("SetJavaScriptEnabled") private void loadSettings() {
-        uiWebView.getSettings().setJavaScriptEnabled(true);
-        uiWebView.addJavascriptInterface(new MyJavaScriptInterface(), "INTERFACE");
-        uiWebView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                view.loadUrl("javascript:window.INTERFACE.processContent(document.getElementsByTagName('body')[0].innerText);");
-            }
-        });
-        uiWebView.loadUrl(prefs.getString(SettingsActivity.KEY_BASE_URL, Api.BASE_URL) + doc.getName());
-
+    private void loadAnnotations() {
         bratInteractor.loadAllAnnotations()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -142,7 +134,8 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
                     annotationList.addAll(uniqueValues);
                     annotationList.remove(null);
                     for (int i = annotationList.size() - 1; i >= 0; i--) {
-                        if (annotationList.get(i).matches("^http.*") || annotationList.get(i).matches("^Some.*")) {
+                        if (annotationList.get(i).matches("^http.*") ||
+                                annotationList.get(i).matches("^Some.*")) {
                             annotationList.remove(i);
                         }
                     }
@@ -150,6 +143,7 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
     }
 
     private void showText() {
+        text = doc.getText();
         String[] words = text.split(" ");
 
         for (String word : words) {
@@ -193,7 +187,16 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
         } else {
             textView.setPadding(16, 0, 0, 0);
             params = new RelativeLayout.LayoutParams(text.length() * 19 + 16, VIEW_HEIGHT);
-            textView.setOnClickListener(this);
+            textView.setOnClickListener(view -> {
+                uiFocusedTextView = textView;
+                if (multySelectingState) {
+                    uiSelectedVews.add(textView);
+                    textView.setBackgroundColor(Color.LTGRAY);
+                } else {
+                    AnnotationDialog.show(textView.getText().toString(), annotationList,
+                            getSupportFragmentManager());
+                }
+            });
             textView.setOnLongClickListener(view -> {
                 textView.setBackgroundColor(Color.LTGRAY);
                 uiSelectedVews.clear();
@@ -204,90 +207,86 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
             });
         }
         params.addRule(RelativeLayout.BELOW, R.id.title);
-        setMargin(params, text);
+        setMargin(params);
         uiTextList.add(textView);
         uiMainContainer.addView(textView, params);
     }
 
-    private void setMargin(RelativeLayout.LayoutParams params, String text) {
+    private void setMargin(RelativeLayout.LayoutParams params) {
         int marginLeft = 0;
         int marginTop = 0;
         for (int i = 0; i < uiTextList.size(); i++) {
             marginLeft += uiTextList.get(i).getLayoutParams().width;
             if (i == uiTextList.size() - 1) {
-                if (marginLeft + params.width >= 720) {
+                if (marginLeft + params.width >= getResources().getDisplayMetrics().widthPixels) {
                     marginLeft = 0;
                     marginTop += VIEW_HEIGHT;
                 }
-            } else if (marginLeft + uiTextList.get(i + 1).getLayoutParams().width >= 720) {
+            } else if (marginLeft + uiTextList.get(i + 1).getLayoutParams().width >=
+                    getResources().getDisplayMetrics().widthPixels) {
                 marginLeft = 0;
                 marginTop += VIEW_HEIGHT;
             }
         }
-        Log.d("TAG", text + " : " + params.width + " left: " + marginLeft + ", top: " + marginTop);
         params.setMargins(marginLeft, marginTop, 0, 0);
     }
 
-    @Override public void onClick(View view) {
-        TextView tv = (TextView) view;
-        uiFocusedTextView = tv;
-        if (multySelectingState) {
-            uiSelectedVews.add(tv);
-            tv.setBackgroundColor(Color.LTGRAY);
-        } else {
-            AnnotationDialog.show(tv.getText().toString(), annotationList, getSupportFragmentManager());
-        }
-    }
-
     @OnClick(R.id.ok_btn) public void onOkClick(View view) {
-        multySelectingState = false;
         AnnotationDialog.show("", annotationList, getSupportFragmentManager());
-        uiOk.setVisibility(View.GONE);
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(AnnotatedEvent event) {
-        if (uiSelectedVews.isEmpty()) {
+        if(multySelectingState) {
+            multySelectingState = false;
+            uiOk.setVisibility(View.GONE);
+        } else {
             uiSelectedVews.add(uiFocusedTextView);
         }
         for (TextView tv : uiSelectedVews) {
-            Annotation annotation = new Annotation(annotationList.get(event.getI()), getAnnotationTarget(tv));
+            Annotation annotation = new Annotation(annotationList.get(event.getI()),
+                    getAnnotationTarget(tv));
             bratInteractor.addAnnotation(annotation)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(result ->
-                                    tv.setBackgroundColor(annotationsColorList.get(event.getI()))
-                            , error -> {
-                                Toast.makeText(this, "Connection faied, sending to server when connection access", Toast.LENGTH_SHORT).show();
-                                String json = gson.toJson(annotation);
-                                Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
-                                annotationSet.add(json);
-                                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
-                            });
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(result -> tv.setBackgroundColor(annotationsColorList.get(event.getI())),
+                    error -> {
+                    tv.setBackgroundColor(annotationsColorList.get(event.getI()));
+                    Toast.makeText(this, "Connection failed, try to send later",
+                            Toast.LENGTH_SHORT).show();
+                    String json = gson.toJson(annotation);
+                    Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION,
+                            new HashSet<>());
+                    annotationSet.add(json);
+                    prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
+                    });
         }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(NewAnnotationEvent event) {
+        annotationList.add(event.getAnnotation());
+        multySelectingState = false;
+        uiOk.setVisibility(View.GONE);
         if (uiSelectedVews.isEmpty()) {
             uiSelectedVews.add(uiFocusedTextView);
         }
         for (TextView tv : uiSelectedVews) {
             Annotation annotation = new Annotation(event.getAnnotation(), getAnnotationTarget(tv));
             bratInteractor.addAnnotation(annotation)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(result -> {
-                                tv.setBackgroundColor(annotationList.size());
-                                annotationList.add(event.getAnnotation());
-                            }
-                            , error -> {
-                                Toast.makeText(this, "Connection faied, sending to server when connection access", Toast.LENGTH_SHORT).show();
-                                String json = gson.toJson(annotation);
-                                Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION, new HashSet<>());
-                                annotationSet.add(json);
-                                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
-                            });
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(result -> tv.setBackgroundColor(annotationList.size())
+                    , error -> {
+                        tv.setBackgroundColor(annotationList.size());
+                        Toast.makeText(this, "Connection failed, try to send later",
+                                Toast.LENGTH_SHORT).show();
+                        String json = gson.toJson(annotation);
+                        Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION,
+                                new HashSet<>());
+                        annotationSet.add(json);
+                        prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
+                    });
         }
     }
 
@@ -302,17 +301,18 @@ public class AnnotationActivity extends BaseActivity implements View.OnClickList
             }
         }
         String clonedText = "";
-        String replaceSympols = "";
-        for (int i = 0; i < view.getText().toString().length(); i++) {
-            replaceSympols += "?";
-        }
         clonedText += text;
+        String replaceSymbols = "";
+        for (int i = 0; i < view.getText().toString().length(); i++) {
+            replaceSymbols += "?";
+        }
         for (int i = 1; i < number; i++) {
-            clonedText.replaceFirst(".*" + view.getText().toString() + ".*", replaceSympols);
+            clonedText.replaceFirst(".*" + view.getText().toString() + ".*", replaceSymbols);
         }
         int start = text.indexOf(view.getText().toString());
         int end = start + view.getText().toString().length();
-        return prefs.getString(SettingsActivity.KEY_BASE_URL, Api.BASE_URL) + "#char=" + start + "," + end;
+        return prefs.getString(BaseUrlActivity.KEY_BASE_URL, Api.BASE_URL)
+                + doc.getId() + "#char=" + start + "," + end;
     }
 
     private class MyJavaScriptInterface {

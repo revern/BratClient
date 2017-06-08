@@ -61,7 +61,8 @@ public class AnnotationDialog extends BaseDialogFragment {
         super.onViewCreated(view, savedInstanceState);
         annotationsColorList = ColorUtils.getAnntationColors(getContext());
         uiTitle.setText(title != null ? title : "");
-        ArrayAdapter<String> annotationsAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_view_annotation_item, annotationsList);
+        ArrayAdapter<String> annotationsAdapter = new ArrayAdapter<String>(getActivity(),
+                R.layout.list_view_annotation_item, annotationsList);
         uiAnnotationList.setAdapter(annotationsAdapter);
         for (int i = 0; i < annotationsList.size(); i++) {
             uiAnnotationList.getChildAt(i).setBackgroundColor(annotationsColorList.get(i));

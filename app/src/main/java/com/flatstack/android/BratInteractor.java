@@ -6,9 +6,6 @@ import com.flatstack.android.model.Annotation;
 import com.flatstack.android.model.Annotations;
 import com.flatstack.android.model.Graph;
 
-import java.util.ArrayList;
-
-import okhttp3.ResponseBody;
 import rx.Observable;
 
 /**
@@ -22,21 +19,8 @@ public class BratInteractor {
         this.api = api;
     }
 
-    public ArrayList<String> loadAnnotations() {
-        //TODO REPLACE : DELETE
-        ArrayList<String> annotationList = new ArrayList<>();
-        annotationList.add("Medicine");
-        annotationList.add("Drug");
-        annotationList.add("Death");
-        return annotationList;
-    }
-
     public Observable<Annotations> loadAllAnnotations(){
         return api.getAllAnnotations();
-    }
-
-    public Observable<ResponseBody> loadDocument(String id) {
-        return api.getDocument(id);
     }
 
     public Observable<Graph> loadDocuments() {
@@ -44,7 +28,6 @@ public class BratInteractor {
     }
 
     public Observable<Annotation> addAnnotation(@NonNull Annotation annotation) {
-        return api.addAnnnotation(annotation.getBody(), annotation.getTarget());
+        return api.addAnnotation(annotation.getBody(), annotation.getTarget());
     }
-
 }

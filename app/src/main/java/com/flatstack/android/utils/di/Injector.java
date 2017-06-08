@@ -5,7 +5,7 @@ import android.support.v4.app.FragmentActivity;
 
 import com.flatstack.android.App;
 import com.flatstack.android.annotation.AnnotationActivity;
-import com.flatstack.android.settings.SettingsActivity;
+import com.flatstack.android.base_url.BaseUrlActivity;
 
 /**
  * Created by Revern on 04.04.2017.
@@ -21,7 +21,7 @@ public class Injector {
         getAppComponent(annotationActivity).inject(annotationActivity);
     }
 
-    public static void inject(SettingsActivity settingsActivity) {
-        getAppComponent(settingsActivity).inject(settingsActivity);
+    public static void inject(BaseUrlActivity baseUrlActivity) {
+        getAppComponent(baseUrlActivity).inject(baseUrlActivity);
     }
 }

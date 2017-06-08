@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.flatstack.android.BratInteractor;
 import com.flatstack.android.annotation.AnnotationActivity;
@@ -63,14 +64,13 @@ public class DocumentsListActivity extends BaseActivity {
 
     }
 
-    @SuppressLint("SetJavaScriptEnabled") private void loadDocumentsList() {
+    private void loadDocumentsList() {
         bratInteractor.loadDocuments()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(result -> {
                     docs = result.getDouments();
                     showDocs();
-                }, ignoreError -> {
-                });
+                }, error -> Toast.makeText(this, "Connection Error", Toast.LENGTH_LONG).show());
     }
 }

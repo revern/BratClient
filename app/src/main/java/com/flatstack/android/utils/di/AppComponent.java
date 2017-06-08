@@ -1,7 +1,7 @@
 package com.flatstack.android.utils.di;
 
 import com.flatstack.android.annotation.AnnotationActivity;
-import com.flatstack.android.settings.SettingsActivity;
+import com.flatstack.android.base_url.BaseUrlActivity;
 
 import javax.inject.Singleton;
 
@@ -15,5 +15,5 @@ import dagger.Component;
 public interface AppComponent {
     void inject(AnnotationActivity annotationActivity);
 
-    void inject(SettingsActivity settingsActivity);
+    void inject(BaseUrlActivity baseUrlActivity);
 }

@@ -23,11 +23,7 @@ public interface Api {
 
     @GET(BASE_URL + "annotations") Observable<Annotations> getAllAnnotations();
 
-    @GET(BASE_URL + "annotations/{id}") Observable<Annotation> getAnnotation(
-            @NonNull @Path("id") String id
-    );
-
-    @POST(BASE_URL + "annotations") Observable<Annotation> addAnnnotation(
+    @POST(BASE_URL + "annotations") Observable<Annotation> addAnnotation(
             @NonNull @Field("id") String body,
             @NonNull @Field("id") String target
     );
