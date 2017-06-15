@@ -19,13 +19,16 @@ import com.flatstack.android.model.Annotation;
 import com.flatstack.android.R;
 import com.flatstack.android.model.Document;
 import com.flatstack.android.base_url.BaseUrlActivity;
+import com.flatstack.android.model.RecomendedView;
 import com.flatstack.android.utils.Bus;
 import com.flatstack.android.utils.CacheUtils;
 import com.flatstack.android.utils.ColorUtils;
+import com.flatstack.android.utils.Lists;
 import com.flatstack.android.utils.NetworkCheckingTimer;
 import com.flatstack.android.utils.di.Injector;
 import com.flatstack.android.utils.network.NetworkUtils;
 import com.flatstack.android.utils.ui.BaseActivity;
+import com.flatstack.android.utils.ui.SimpleDialog;
 import com.flatstack.android.utils.ui.UiInfo;
 import com.google.gson.Gson;
 
@@ -49,6 +52,7 @@ import rx.schedulers.Schedulers;
 
 public class AnnotationActivity extends BaseActivity {
 
+    public static final String ARG_ALL_DOCUMENTS = "allDocuments";
     public static final String ARG_DOCUMENT = "document";
     private static final int VIEW_HEIGHT = 60;
 
@@ -59,15 +63,20 @@ public class AnnotationActivity extends BaseActivity {
     @Bind(R.id.annotation_container) RelativeLayout uiMainContainer;
     @Bind(R.id.ok_btn) TextView uiOk;
 
+
     TextView uiFocusedTextView;
 
     private List<TextView> uiTextList = new ArrayList<>();
-    private List<TextView> uiSelectedVews = new ArrayList<>();
+    private List<TextView> uiSelectedViews = new ArrayList<>();
+    private List<RecomendedView> recommendedViews = new ArrayList<>();
+    private List<Annotation> allAnnotationList = new ArrayList<>();
     private ArrayList<String> annotationList = new ArrayList<>();
     private List<Integer> annotationsColorList = new ArrayList<>();
+    private List<Document> allDocuments = new ArrayList<>();
     private Document doc;
     private String text;
     private boolean multySelectingState;
+    private boolean recomendationState;
     private Gson gson = new Gson();
 
     @NonNull @Override public UiInfo getUiInfo() {
@@ -85,7 +94,13 @@ public class AnnotationActivity extends BaseActivity {
         annotationsColorList = ColorUtils.getAnntationColors(this);
         loadAnnotations();
         showText();
+        showAutoAnnotationDialog();
         startNetworkChecking();
+    }
+
+    private void showAutoAnnotationDialog() {
+        SimpleDialog.show(this, "", "Do you want auto annotate text?", "OK",
+                this::setRecommendedAnnotations);
     }
 
     private void startNetworkChecking() {
@@ -99,17 +114,17 @@ public class AnnotationActivity extends BaseActivity {
                     String jsonAnnotation = i.next();
                     Annotation annotation = gson.fromJson(jsonAnnotation, Annotation.class);
                     bratInteractor.addAnnotation(annotation)
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribe(result -> {
-                            }
-                            , error -> {
-                                String json = gson.toJson(annotation);
-                                Set<String> annotationSet = prefs.getStringSet(
-                                        CacheUtils.KEY_ANNOTATION, new HashSet<>());
-                                annotationSet.add(json);
-                                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
-                            });
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(result -> {
+                                    }
+                                    , error -> {
+                                        String json = gson.toJson(annotation);
+                                        Set<String> annotationSet = prefs.getStringSet(
+                                                CacheUtils.KEY_ANNOTATION, new HashSet<>());
+                                        annotationSet.add(json);
+                                        prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
+                                    });
                 }
             }
         });
@@ -118,6 +133,10 @@ public class AnnotationActivity extends BaseActivity {
 
     @Override protected void parseArguments(@NonNull Bundle extras) {
         doc = (Document) extras.getSerializable(ARG_DOCUMENT);
+        Document[] docs = (Document[]) extras.getSerializable(ARG_ALL_DOCUMENTS);
+        if (docs != null) {
+            allDocuments = Lists.add(allDocuments, docs);
+        }
     }
 
     private void loadAnnotations() {
@@ -125,6 +144,7 @@ public class AnnotationActivity extends BaseActivity {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(result -> {
+                    allAnnotationList = result.getAnnotations();
                     for (Annotation annotation : result.getAnnotations()) {
                         annotationList.add(annotation.getBody());
                     }
@@ -190,8 +210,15 @@ public class AnnotationActivity extends BaseActivity {
             textView.setOnClickListener(view -> {
                 uiFocusedTextView = textView;
                 if (multySelectingState) {
-                    uiSelectedVews.add(textView);
+                    uiSelectedViews.add(textView);
                     textView.setBackgroundColor(Color.LTGRAY);
+                } else if(recomendationState) {
+                    for(int i = 0; i<recommendedViews.size(); i++) {
+                        if(recommendedViews.get(i).getView() == textView) {
+                            textView.setBackgroundColor(Color.WHITE);
+                            recommendedViews.remove(i);
+                        }
+                    }
                 } else {
                     AnnotationDialog.show(textView.getText().toString(), annotationList,
                             getSupportFragmentManager());
@@ -199,8 +226,8 @@ public class AnnotationActivity extends BaseActivity {
             });
             textView.setOnLongClickListener(view -> {
                 textView.setBackgroundColor(Color.LTGRAY);
-                uiSelectedVews.clear();
-                uiSelectedVews.add((TextView) view);
+                uiSelectedViews.clear();
+                uiSelectedViews.add((TextView) view);
                 multySelectingState = true;
                 uiOk.setVisibility(View.VISIBLE);
                 return false;
@@ -232,34 +259,60 @@ public class AnnotationActivity extends BaseActivity {
     }
 
     @OnClick(R.id.ok_btn) public void onOkClick(View view) {
-        AnnotationDialog.show("", annotationList, getSupportFragmentManager());
+        if(multySelectingState) {
+            AnnotationDialog.show("", annotationList, getSupportFragmentManager());
+        } else if(recomendationState) {
+            sendRecommendedAnnotations();
+        }
+    }
+
+    private void sendRecommendedAnnotations(){
+        recomendationState = false;
+        uiOk.setVisibility(View.GONE);
+
+        for(RecomendedView recomendedView : recommendedViews) {
+            Annotation annotation = new Annotation(annotationList.get(recomendedView.getTargetPosition()),
+                    getAnnotationTarget(recomendedView.getView()));
+            bratInteractor.addAnnotation(annotation)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(result -> { }, error -> {
+                                Toast.makeText(this, "Connection failed, try to send later",
+                                        Toast.LENGTH_SHORT).show();
+                                String json = gson.toJson(annotation);
+                                Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION,
+                                        new HashSet<>());
+                                annotationSet.add(json);
+                                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
+                            });
+        }
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(AnnotatedEvent event) {
-        if(multySelectingState) {
+        if (multySelectingState) {
             multySelectingState = false;
             uiOk.setVisibility(View.GONE);
         } else {
-            uiSelectedVews.add(uiFocusedTextView);
+            uiSelectedViews.add(uiFocusedTextView);
         }
-        for (TextView tv : uiSelectedVews) {
+        for (TextView tv : uiSelectedViews) {
             Annotation annotation = new Annotation(annotationList.get(event.getI()),
                     getAnnotationTarget(tv));
             bratInteractor.addAnnotation(annotation)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(result -> tv.setBackgroundColor(annotationsColorList.get(event.getI())),
-                    error -> {
-                    tv.setBackgroundColor(annotationsColorList.get(event.getI()));
-                    Toast.makeText(this, "Connection failed, try to send later",
-                            Toast.LENGTH_SHORT).show();
-                    String json = gson.toJson(annotation);
-                    Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION,
-                            new HashSet<>());
-                    annotationSet.add(json);
-                    prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
-                    });
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(result -> tv.setBackgroundColor(annotationsColorList.get(event.getI())),
+                            error -> {
+                                tv.setBackgroundColor(annotationsColorList.get(event.getI()));
+                                Toast.makeText(this, "Connection failed, try to send later",
+                                        Toast.LENGTH_SHORT).show();
+                                String json = gson.toJson(annotation);
+                                Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION,
+                                        new HashSet<>());
+                                annotationSet.add(json);
+                                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
+                            });
         }
     }
 
@@ -268,25 +321,25 @@ public class AnnotationActivity extends BaseActivity {
         annotationList.add(event.getAnnotation());
         multySelectingState = false;
         uiOk.setVisibility(View.GONE);
-        if (uiSelectedVews.isEmpty()) {
-            uiSelectedVews.add(uiFocusedTextView);
+        if (uiSelectedViews.isEmpty()) {
+            uiSelectedViews.add(uiFocusedTextView);
         }
-        for (TextView tv : uiSelectedVews) {
+        for (TextView tv : uiSelectedViews) {
             Annotation annotation = new Annotation(event.getAnnotation(), getAnnotationTarget(tv));
             bratInteractor.addAnnotation(annotation)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(result -> tv.setBackgroundColor(annotationList.size())
-                    , error -> {
-                        tv.setBackgroundColor(annotationList.size());
-                        Toast.makeText(this, "Connection failed, try to send later",
-                                Toast.LENGTH_SHORT).show();
-                        String json = gson.toJson(annotation);
-                        Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION,
-                                new HashSet<>());
-                        annotationSet.add(json);
-                        prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
-                    });
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(result -> tv.setBackgroundColor(annotationList.size())
+                            , error -> {
+                                tv.setBackgroundColor(annotationList.size());
+                                Toast.makeText(this, "Connection failed, try to send later",
+                                        Toast.LENGTH_SHORT).show();
+                                String json = gson.toJson(annotation);
+                                Set<String> annotationSet = prefs.getStringSet(CacheUtils.KEY_ANNOTATION,
+                                        new HashSet<>());
+                                annotationSet.add(json);
+                                prefs.edit().putStringSet(CacheUtils.KEY_ANNOTATION, annotationSet);
+                            });
         }
     }
 
@@ -313,6 +366,28 @@ public class AnnotationActivity extends BaseActivity {
         int end = start + view.getText().toString().length();
         return prefs.getString(BaseUrlActivity.KEY_BASE_URL, Api.BASE_URL)
                 + doc.getId() + "#char=" + start + "," + end;
+    }
+
+    private void setRecommendedAnnotations() {
+        recommendedViews.clear();
+        for (Annotation annotation : allAnnotationList) {
+            for (TextView wordView : uiTextList) {
+                if (annotation.getText().equals(wordView.getText().toString())) {
+                    for (int i = 0; i < annotationList.size(); i++) {
+                        if (annotationList.get(i).equals(annotation.getTarget())) {
+                            wordView.setBackgroundColor(annotationsColorList.get(i));
+                            recommendedViews.add(new RecomendedView(wordView,
+                                    annotation.getTarget(), i));
+                        }
+                    }
+                }
+            }
+        }
+
+        if(!recommendedViews.isEmpty()) {
+            recomendationState = true;
+            uiOk.setVisibility(View.VISIBLE);
+        }
     }
 
     private class MyJavaScriptInterface {

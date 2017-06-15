@@ -60,7 +60,9 @@ public class DocumentsListActivity extends BaseActivity {
     @OnItemClick(R.id.documents_list) public void onDocClick(AdapterView<?> parent,
                                                              View view, int position, long id) {
         startActivity(new Intent(this, AnnotationActivity.class).putExtra(
-                AnnotationActivity.ARG_DOCUMENT, docs.get(position)));
+                AnnotationActivity.ARG_DOCUMENT, docs.get(position)).putExtra(
+                AnnotationActivity.ARG_ALL_DOCUMENTS, docs.toArray()));
+        ));
 
     }
 

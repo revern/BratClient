@@ -11,6 +11,7 @@ public class Annotation {
     private String id;
     private String body;
     private String target;
+    private String text;
 
     public Annotation(@NonNull String body, @NonNull String target) {
         this.body = body;
@@ -29,15 +30,11 @@ public class Annotation {
         return body;
     }
 
-    public void setBody(String body) {
-        this.body = body;
-    }
-
     public String getTarget() {
         return target;
     }
 
-    public void setTarget(String target) {
-        this.target = target;
+    public String getText() {
+        return text == null ? "" : text;
     }
 }
