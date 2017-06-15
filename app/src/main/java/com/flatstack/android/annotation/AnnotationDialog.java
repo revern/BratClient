@@ -12,23 +12,27 @@ import android.widget.TextView;
 
 import com.flatstack.android.R;
 import com.flatstack.android.utils.Bus;
+import com.flatstack.android.utils.ColorUtils;
 import com.flatstack.android.utils.ui.BaseDialogFragment;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import butterknife.Bind;
+import butterknife.OnClick;
 
 public class AnnotationDialog extends BaseDialogFragment {
 
-    private static final String KEY_TITLE   = "dialogTitle";
+    private static final String KEY_TITLE = "dialogTitle";
     private static final String KEY_ANNOTATIONS = "dialogAnnotations";
 
-    @Bind(R.id.dialog_title)   TextView uiTitle;
+    @Bind(R.id.dialog_title) TextView uiTitle;
     @Bind(R.id.dialog_annotation) EditText uiAnnotation;
     @Bind(R.id.dialog_annotation_list) ListView uiAnnotationList;
 
     private String title;
     private ArrayList<String> annotationsList;
+    private List<Integer> annotationsColorList;
 
     @Override public int getLayoutRes() {
         return R.layout.dialog_annotation;
@@ -55,12 +59,22 @@ public class AnnotationDialog extends BaseDialogFragment {
 
     @Override public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        annotationsColorList = ColorUtils.getAnntationColors(getContext());
         uiTitle.setText(title != null ? title : "");
-        ArrayAdapter<String> annotationsAdapter = new ArrayAdapter<String>(getActivity(), R.layout.list_view_annotation_item , annotationsList);
+        ArrayAdapter<String> annotationsAdapter = new ArrayAdapter<String>(getActivity(),
+                R.layout.list_view_annotation_item, annotationsList);
         uiAnnotationList.setAdapter(annotationsAdapter);
+        for (int i = 0; i < annotationsList.size(); i++) {
+            uiAnnotationList.getChildAt(i).setBackgroundColor(annotationsColorList.get(i));
+        }
         uiAnnotationList.setOnItemClickListener((adapterView, v, i, l) -> {
             Bus.event(new AnnotatedEvent(i));
             getDialog().dismiss();
         });
+    }
+
+    @OnClick(R.id.ok_btn) public void onOkClick(View view) {
+        Bus.event(new NewAnnotationEvent(uiAnnotation.getText().toString()));
+        getDialog().dismiss();
     }
 }

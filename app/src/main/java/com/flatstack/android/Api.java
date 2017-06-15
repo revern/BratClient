@@ -4,12 +4,12 @@ import android.support.annotation.NonNull;
 
 import com.flatstack.android.model.Annotation;
 import com.flatstack.android.model.Annotations;
-import com.flatstack.android.model.Document;
-
-import java.util.List;
+import com.flatstack.android.model.Graph;
 
 import okhttp3.ResponseBody;
+import retrofit2.http.Field;
 import retrofit2.http.GET;
+import retrofit2.http.POST;
 import retrofit2.http.Path;
 import rx.Observable;
 
@@ -23,11 +23,12 @@ public interface Api {
 
     @GET(BASE_URL + "annotations") Observable<Annotations> getAllAnnotations();
 
-    @GET(BASE_URL + "annotations/{id}") Observable<Annotation> getAnnotation(
-            @NonNull @Path("id") String id
+    @POST(BASE_URL + "annotations") Observable<Annotation> addAnnotation(
+            @NonNull @Field("id") String body,
+            @NonNull @Field("id") String target
     );
 
-    @GET(BASE_URL + "documents") Observable<List<Document>> getAllDocuments();
+    @GET(BASE_URL + "documents") Observable<Graph> getAllDocuments();
 
     @GET(BASE_URL + "documents/{id}") Observable<ResponseBody> getDocument(
             @NonNull @Path("id") String id

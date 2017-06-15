@@ -1,6 +1,6 @@
 package com.flatstack.android.utils.network;
 
-import com.flatstack.android.utils.Strings;
+import com.flatstack.android.utils.StringsUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -16,7 +16,7 @@ public class CommonError {
         String message = error.error == null ? "" : (error.error + '\n');
         if (error.validations != null) {
             for (String key : error.validations.keySet()) {
-                message += key + " " + Strings.listToString(error.validations.get(key)) + '\n';
+                message += key + " " + StringsUtils.listToString(error.validations.get(key)) + '\n';
             }
         }
         return message;

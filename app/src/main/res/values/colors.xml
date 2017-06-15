@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="red">#FF0000</color>
+    <color name="annotation1">#AAFF0000</color>
+    <color name="annotation2">#AA00FF00</color>
+    <color name="annotation3">#AA0000FF</color>
+    <color name="annotation4">#AAFFFF00</color>
+    <color name="annotation5">#AAFF00FF</color>
+    <color name="annotation6">#AA00FFFF</color>
+    <color name="annotation7">#AAAA0000</color>
+    <color name="annotation8">#AA00AA00</color>
+    <color name="annotation9">#AA0000AA</color>
+    <color name="annotation10">#AAAAAA00</color>
+    <color name="annotation11">#AAAA00AA</color>
+    <color name="annotation12">#AA00AAAA</color>
+    <color name="annotation13">#AA111166</color>
+    <color name="annotation14">#AA002255</color>
+    <color name="annotation15">#AA123456</color>
+    <color name="annotation16">#AAFFAAAA</color>
+    <color name="annotation17">#AAFF5511</color>
+    <color name="annotation18">#AAFF6542</color>
+    <color name="annotation19">#AAAFFF00</color>
+    <color name="annotation20">#AAFFAAFF</color>
 </resources>
