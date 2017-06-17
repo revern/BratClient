@@ -62,8 +62,6 @@ public class DocumentsListActivity extends BaseActivity {
         startActivity(new Intent(this, AnnotationActivity.class).putExtra(
                 AnnotationActivity.ARG_DOCUMENT, docs.get(position)).putExtra(
                 AnnotationActivity.ARG_ALL_DOCUMENTS, docs.toArray()));
-        ));
-
     }
 
     private void loadDocumentsList() {

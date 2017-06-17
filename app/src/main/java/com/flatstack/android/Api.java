@@ -24,8 +24,8 @@ public interface Api {
     @GET(BASE_URL + "annotations") Observable<Annotations> getAllAnnotations();
 
     @POST(BASE_URL + "annotations") Observable<Annotation> addAnnotation(
-            @NonNull @Field("id") String body,
-            @NonNull @Field("id") String target
+            @NonNull @Field("body") String body,
+            @NonNull @Field("target") String target
     );
 
     @GET(BASE_URL + "documents") Observable<Graph> getAllDocuments();

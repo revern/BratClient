@@ -34,17 +34,6 @@ android {
         }
     }
 
-//    signingConfigs {
-//        release {
-//            def props = new Properties()
-//            props.load(new FileInputStream(file("$rootDir/keys.properties")))
-//            storeFile file("$rootDir/your.jks")
-//            storePassword props['storePassword']
-//            keyAlias props['keyAlias']
-//            keyPassword props['keyPassword']
-//        }
-//    }
-
     buildTypes {
         debug {
         }

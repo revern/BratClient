@@ -76,7 +76,7 @@ public class AnnotationActivity extends BaseActivity {
     private Document doc;
     private String text;
     private boolean multySelectingState;
-    private boolean recomendationState;
+    private boolean autoannotationState;
     private Gson gson = new Gson();
 
     @NonNull @Override public UiInfo getUiInfo() {
@@ -208,29 +208,10 @@ public class AnnotationActivity extends BaseActivity {
             textView.setPadding(16, 0, 0, 0);
             params = new RelativeLayout.LayoutParams(text.length() * 19 + 16, VIEW_HEIGHT);
             textView.setOnClickListener(view -> {
-                uiFocusedTextView = textView;
-                if (multySelectingState) {
-                    uiSelectedViews.add(textView);
-                    textView.setBackgroundColor(Color.LTGRAY);
-                } else if(recomendationState) {
-                    for(int i = 0; i<recommendedViews.size(); i++) {
-                        if(recommendedViews.get(i).getView() == textView) {
-                            textView.setBackgroundColor(Color.WHITE);
-                            recommendedViews.remove(i);
-                        }
-                    }
-                } else {
-                    AnnotationDialog.show(textView.getText().toString(), annotationList,
-                            getSupportFragmentManager());
-                }
+                onWordClick(textView);
             });
             textView.setOnLongClickListener(view -> {
-                textView.setBackgroundColor(Color.LTGRAY);
-                uiSelectedViews.clear();
-                uiSelectedViews.add((TextView) view);
-                multySelectingState = true;
-                uiOk.setVisibility(View.VISIBLE);
-                return false;
+                return onWordLongClick(textView);
             });
         }
         params.addRule(RelativeLayout.BELOW, R.id.title);
@@ -239,6 +220,32 @@ public class AnnotationActivity extends BaseActivity {
         uiMainContainer.addView(textView, params);
     }
 
+    private void onWordClick(@NonNull TextView textView) {
+        uiFocusedTextView = textView;
+        if (multySelectingState) {
+            uiSelectedViews.add(textView);
+            textView.setBackgroundColor(Color.LTGRAY);
+        } else if(autoannotationState) {
+            for(int i = 0; i<recommendedViews.size(); i++) {
+                if(recommendedViews.get(i).getView() == textView) {
+                    textView.setBackgroundColor(Color.WHITE);
+                    recommendedViews.remove(i);
+                }
+            }
+        } else {
+            AnnotationDialog.show(textView.getText().toString(), annotationList,
+                    getSupportFragmentManager());
+        }
+    }
+
+    private boolean onWordLongClick(@NonNull TextView textView) {
+        textView.setBackgroundColor(Color.LTGRAY);
+        uiSelectedViews.clear();
+        uiSelectedViews.add(textView);
+        multySelectingState = true;
+        uiOk.setVisibility(View.VISIBLE);
+        return false;
+    }
     private void setMargin(RelativeLayout.LayoutParams params) {
         int marginLeft = 0;
         int marginTop = 0;
@@ -261,13 +268,13 @@ public class AnnotationActivity extends BaseActivity {
     @OnClick(R.id.ok_btn) public void onOkClick(View view) {
         if(multySelectingState) {
             AnnotationDialog.show("", annotationList, getSupportFragmentManager());
-        } else if(recomendationState) {
+        } else if(autoannotationState) {
             sendRecommendedAnnotations();
         }
     }
 
     private void sendRecommendedAnnotations(){
-        recomendationState = false;
+        autoannotationState = false;
         uiOk.setVisibility(View.GONE);
 
         for(RecomendedView recomendedView : recommendedViews) {
@@ -385,7 +392,7 @@ public class AnnotationActivity extends BaseActivity {
         }
 
         if(!recommendedViews.isEmpty()) {
-            recomendationState = true;
+            autoannotationState = true;
             uiOk.setVisibility(View.VISIBLE);
         }
     }
