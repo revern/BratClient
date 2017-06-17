@@ -80,7 +80,7 @@ public class AnnotationActivity extends BaseActivity {
     private Gson gson = new Gson();
 
     @NonNull @Override public UiInfo getUiInfo() {
-        return new UiInfo(R.layout.activity_documents_list)
+        return new UiInfo(R.layout.activity_annotation)
                 .setTitleRes(R.string.app_name)
                 .enableBackButton();
     }
@@ -88,7 +88,6 @@ public class AnnotationActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_annotation);
         Bus.subscribe(this);
         Injector.inject(this);
         annotationsColorList = ColorUtils.getAnntationColors(this);
